@@ -140,7 +140,7 @@
       const conf = Math.round(res.data.confidence || 0);
       const plate = validPlate(res.data.text);
       const box = biggestWord(res.data, canvas.width);
-      if (plate && conf > best.conf) {
+      if (plate && (!best.plate || conf > best.conf)) {
         best = { plate: plate, conf: conf, h: box ? box.height : 0, edge: box ? box.edge : false };
       } else if (!plate && box && box.height > best.h) {
         best.h = box.height;
@@ -450,14 +450,14 @@
             });
             const conf = Math.round(res.data.confidence || 0);
             const plate = validPlate(res.data.text);
-            if (plate && conf > best.conf) best = { plate: plate, conf: conf };
+            if (plate && (!best.plate || conf > best.conf)) best = { plate: plate, conf: conf };
             if (plate && conf >= 65) break;
           }
           if (best.plate) {
             input.value = best.plate;
             readout.hidden = false;
             readout.querySelector('strong').textContent = best.plate;
-            setStatus('Placa leída en la zona · ' + best.conf + '% de confianza. Verifica y registra.');
+            setStatus(best.conf > 0 ? ('Placa leída en la zona · ' + best.conf + '% de confianza. Verifica y registra.') : 'Placa leída en la zona. Verifica y registra.');
             showSelect(false);
           } else {
             setStatus('No se pudo leer esa zona. Ajusta el rectángulo y reintenta.');
@@ -589,7 +589,7 @@
 
         try {
           const r = await readPlate(video, 1000, ['gray', 'threshold']);
-          if (r.plate && r.conf >= 40) {
+          if (r.plate) {
             input.value = r.plate;
             readout.hidden = false;
             readout.querySelector('strong').textContent = r.plate;
