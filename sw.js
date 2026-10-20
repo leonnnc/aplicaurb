@@ -1,20 +1,20 @@
 /* Service worker · URB San Lucas
    Permite instalar la app y abrirla sin conexión. */
-const CACHE = 'urb-2.3.2';
+const CACHE = 'urb-2.4.2';
 const SHELL = [
   './',
   './index.html',
   './manifest.json',
-  './assets/css/styles.css?v=26',
-  './assets/js/data.js?v=26',
-  './assets/js/core.js?v=26',
-  './assets/js/camera.js?v=26',
-  './assets/js/views-panel.js?v=26',
-  './assets/js/views-map.js?v=26',
-  './assets/js/views-access.js?v=26',
-  './assets/js/views-records.js?v=26',
-  './assets/js/views-reports.js?v=26',
-  './assets/js/app.js?v=26',
+  './assets/css/styles.css?v=29',
+  './assets/js/data.js?v=29',
+  './assets/js/core.js?v=29',
+  './assets/js/camera.js?v=29',
+  './assets/js/views-panel.js?v=29',
+  './assets/js/views-map.js?v=29',
+  './assets/js/views-access.js?v=29',
+  './assets/js/views-records.js?v=29',
+  './assets/js/views-reports.js?v=29',
+  './assets/js/app.js?v=29',
   './assets/img/urb-splash.jpg',
   './assets/img/icon-192.png',
   './assets/img/icon-512.png',

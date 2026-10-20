@@ -59,44 +59,36 @@
 
   /* Valida y corrige confusiones típicas (O/0, I/1, S/5, B/8, G/6, Z/2).
      Devuelve "" si no cumple un formato real: así no se muestra basura. */
-  function validPlate(text) {
-    const s = String(text || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  function plateFromToken(s) {
     if (s.length < 5 || s.length > 7) return '';
     const isL = (c) => /[A-Z]/.test(c);
     const isD = (c) => /[0-9]/.test(c);
-    const toL = { 0: 'O', 1: 'I', 5: 'S', 8: 'B', 6: 'G', 2: 'Z' };
-    const toD = { O: '0', Q: '0', D: '0', I: '1', S: '5', B: '8', G: '6', Z: '2' };
 
-    function build(len, letterCount) {
-      let out = '';
-      let changes = 0;
-      for (let i = 0; i < len; i++) {
-        const ch = s[i];
-        if (i < letterCount) {
-          if (isL(ch)) out += ch;
-          else if (toL[ch]) { out += toL[ch]; changes++; }
-          else return '';
-        } else {
-          if (isD(ch)) out += ch;
-          else if (toD[ch]) { out += toD[ch]; changes++; }
-          else return '';
-        }
-      }
-      return changes <= 2 ? out : '';
+    // Formatos exactos (sin corregir nada)
+    if (s.length === 6) {
+      if (/^[A-Z]{3}[0-9]{3}$/.test(s)) return s.slice(0, 3) + '-' + s.slice(3);
+      if (/^[A-Z][0-9][A-Z][0-9]{3}$/.test(s)) return s.slice(0, 3) + '-' + s.slice(3);
+      if (/^[0-9]{4}[A-Z]{2}$/.test(s)) return s.slice(0, 4) + '-' + s.slice(4);
+    }
+    if (s.length === 5) {
+      if (/^[0-9]{4}[A-Z]$/.test(s)) return s.slice(0, 4) + '-' + s.slice(4);
     }
 
-    function buildDigitsFirst(len, digitCount) {
+    const toL = { 0: 'O', 1: 'I', 5: 'S', 8: 'B', 6: 'G', 2: 'Z' };
+    const toD = { O: '0', I: '1', S: '5', B: '8', G: '6', Z: '2', Q: '0', D: '0' };
+
+    function build(kinds) {
       let out = '';
       let changes = 0;
-      for (let i = 0; i < len; i++) {
+      for (let i = 0; i < kinds.length; i++) {
         const ch = s[i];
-        if (i < digitCount) {
-          if (isD(ch)) out += ch;
-          else if (toD[ch]) { out += toD[ch]; changes++; }
-          else return '';
-        } else {
+        if (kinds[i] === 'L') {
           if (isL(ch)) out += ch;
           else if (toL[ch]) { out += toL[ch]; changes++; }
+          else return '';
+        } else {
+          if (isD(ch)) out += ch;
+          else if (toD[ch]) { out += toD[ch]; changes++; }
           else return '';
         }
       }
@@ -104,37 +96,35 @@
     }
 
     if (s.length === 6) {
-      const auto = build(6, 3);
-      if (/^[A-Z]{3}[0-9]{3}$/.test(auto)) return auto.slice(0, 3) + '-' + auto.slice(3);
-      const moto = buildDigitsFirst(6, 4);
-      if (/^[0-9]{4}[A-Z]{2}$/.test(moto)) return moto.slice(0, 4) + '-' + moto.slice(4);
-      return '';
+      let c = build('LLLDDD');
+      if (/^[A-Z]{3}[0-9]{3}$/.test(c)) return c.slice(0, 3) + '-' + c.slice(3);
+      c = build('LDLDDD');
+      if (/^[A-Z][0-9][A-Z][0-9]{3}$/.test(c)) return c.slice(0, 3) + '-' + c.slice(3);
+      c = build('DDDDLL');
+      if (/^[0-9]{4}[A-Z]{2}$/.test(c)) return c.slice(0, 4) + '-' + c.slice(4);
     }
-
     if (s.length === 5) {
-      const moto = buildDigitsFirst(5, 4);
-      if (/^[0-9]{4}[A-Z]$/.test(moto)) return moto.slice(0, 4) + '-' + moto.slice(4);
+      const c = build('DDDDL');
+      if (/^[0-9]{4}[A-Z]$/.test(c)) return c.slice(0, 4) + '-' + c.slice(4);
     }
     return '';
   }
 
-  function biggestWord(data, width) {
-    let best = null;
-    const words = data.words || [];
-    for (let i = 0; i < words.length; i++) {
-      const w = words[i];
-      const txt = String(w.text || '').replace(/[^A-Za-z0-9]/g, '');
-      if (txt.length < 3) continue;
-      const h = w.bbox.y1 - w.bbox.y0;
-      if (!best || h > best.height) {
-        best = { height: h, edge: w.bbox.x0 < 6 || w.bbox.x1 > width - 6 };
+  function validPlate(text) {
+    const raw = String(text || '').toUpperCase();
+    const parts = raw.split(/[\s,;|]+/).map((p) => p.replace(/[^A-Z0-9]/g, '')).filter(Boolean);
+    const all = raw.replace(/[^A-Z0-9]/g, '');
+    const candidates = parts.slice();
+    for (let i = 0; i < parts.length - 1; i++) candidates.push(parts[i] + parts[i + 1]);
+    candidates.push(all);
+    for (let i = 0; i < candidates.length; i++) {
+      const c = candidates[i];
+      if (c.length >= 5 && c.length <= 7) {
+        const p = plateFromToken(c);
+        if (p) return p;
       }
     }
-    if (!best && data.lines && data.lines.length) {
-      const bb = data.lines[0].bbox;
-      best = { height: bb.y1 - bb.y0, edge: bb.x0 < 6 || bb.x1 > width - 6 };
-    }
-    return best;
+    return '';
   }
 
   async function readPlate(video, targetW, modes) {
@@ -194,6 +184,37 @@
     });
   }
 
+  function resizeData(dataUrl, maxW) {
+    return new Promise((resolve) => {
+      const im = new Image();
+      im.onload = () => {
+        const scale = Math.min(1, maxW / im.width);
+        const c = document.createElement('canvas');
+        c.width = Math.round(im.width * scale);
+        c.height = Math.round(im.height * scale);
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+        resolve(c.toDataURL('image/jpeg', 0.58));
+      };
+      im.onerror = () => resolve(dataUrl);
+      im.src = dataUrl;
+    });
+  }
+
+  function enhance(canvas, mode) {
+    const ctx = canvas.getContext('2d');
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const d = img.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+      const v = mode === 'threshold'
+        ? (g > 125 ? 255 : 0)
+        : Math.max(0, Math.min(255, (g - 128) * 1.9 + 128));
+      d[i] = d[i + 1] = d[i + 2] = v;
+    }
+    ctx.putImageData(img, 0, 0);
+    return canvas;
+  }
+
   function Camera() {
     let stream = null, facing = 'environment', video = null, readout = null, input = null, statusEl = null;
 
@@ -217,6 +238,7 @@
         '<div class="cam-stage">' +
         '<video autoplay playsinline muted></video>' +
         '<img hidden alt="Captura de la placa">' +
+        '<div class="cam-select" data-select hidden><div class="sel-box" data-selbox></div></div>' +
         '<div class="cam-frame"><span></span><span></span><span></span><span></span></div>' +
         '<div class="cam-auto" data-auto hidden>ESCANEANDO</div>' +
         '<div class="cam-hint" data-hint>Acerca la cámara: la placa debe llenar el recuadro</div>' +
@@ -224,6 +246,7 @@
         '</div>' +
         '<div class="cam-bottom">' +
         '<div class="cam-status" data-status></div>' +
+        '<button class="btn btn-primary" data-cam="readsel" hidden style="width:100%;margin-bottom:8px">Leer placa seleccionada</button>' +
         '<div class="cam-manual">' +
         '<input class="input" data-manual maxlength="8" placeholder="Escribir placa manual" autocomplete="off" spellcheck="false">' +
         '<button class="btn" data-cam="manual">Usar</button>' +
@@ -250,6 +273,9 @@
       const autoBadge = el.querySelector('[data-auto]');
 
       let foto = null;
+      let fotoHD = null;
+      let sel = null;
+      let dragSel = null;
       let scanTimer = null;
       let startTimer = null;
       let busy = false;
@@ -328,6 +354,117 @@
           return;
         }
         scanTimer = setTimeout(loopScan, 700);
+      }
+
+      function imageRect() {
+        const stage = el.querySelector('.cam-stage');
+        const img = el.querySelector('img');
+        const W = stage.clientWidth;
+        const H = stage.clientHeight;
+        const nw = img.naturalWidth || 1;
+        const nh = img.naturalHeight || 1;
+        const scale = Math.min(W / nw, H / nh);
+        const dw = nw * scale;
+        const dh = nh * scale;
+        return { W, H, ox: (W - dw) / 2, oy: (H - dh) / 2, dw, dh, scale };
+      }
+
+      function renderSel() {
+        const box = el.querySelector('[data-selbox]');
+        if (!sel) { box.style.display = 'none'; return; }
+        box.style.display = 'block';
+        box.style.left = sel.x + 'px';
+        box.style.top = sel.y + 'px';
+        box.style.width = sel.w + 'px';
+        box.style.height = sel.h + 'px';
+      }
+
+      function clampSel() {
+        const ir = imageRect();
+        sel.w = Math.max(24, Math.min(sel.w, ir.dw));
+        sel.h = Math.max(12, Math.min(sel.h, ir.dh));
+        sel.x = Math.max(ir.ox, Math.min(sel.x, ir.ox + ir.dw - sel.w));
+        sel.y = Math.max(ir.oy, Math.min(sel.y, ir.oy + ir.dh - sel.h));
+      }
+
+      function defaultBox() {
+        const ir = imageRect();
+        const w = ir.dw * 0.80;
+        const h = ir.dh * 0.55;
+        sel = { x: ir.ox + (ir.dw - w) / 2, y: ir.oy + (ir.dh - h) / 2, w: w, h: h };
+      }
+
+      function showSelect(on) {
+        const ov = el.querySelector('[data-select]');
+        const btn = el.querySelector('[data-cam="readsel"]');
+        ov.hidden = !on;
+        btn.hidden = !on;
+        if (!on) { sel = null; renderSel(); return; }
+        const img = el.querySelector('img');
+        if (!img.naturalWidth) {
+          img.addEventListener('load', () => showSelect(true), { once: true });
+          return;
+        }
+        defaultBox();
+        renderSel();
+        setHint('Arrastra el rectángulo sobre la placa', 'warn');
+      }
+
+      function cropSel() {
+        const ir = imageRect();
+        const img = el.querySelector('img');
+        const x = (sel.x - ir.ox) / ir.scale;
+        const y = (sel.y - ir.oy) / ir.scale;
+        const w = sel.w / ir.scale;
+        const h = sel.h / ir.scale;
+        const padX = w * 0.06;
+        const padY = h * 0.12;
+        const sx = Math.max(0, x - padX);
+        const sy = Math.max(0, y - padY);
+        const sw = Math.min(img.naturalWidth - sx, w + padX * 2);
+        const sh = Math.min(img.naturalHeight - sy, h + padY * 2);
+        const c = document.createElement('canvas');
+        c.width = 1000;
+        c.height = Math.max(40, Math.round(1000 * sh / sw));
+        c.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+        return c;
+      }
+
+      async function readSelected() {
+        if (!sel) return;
+        setStatus('Leyendo la zona seleccionada…');
+        const base = cropSel();
+        try {
+          const T = await loadTesseract();
+          let best = { plate: '', conf: 0 };
+          const modes = ['gray', 'threshold'];
+          for (let i = 0; i < modes.length; i++) {
+            const c = document.createElement('canvas');
+            c.width = base.width;
+            c.height = base.height;
+            c.getContext('2d').drawImage(base, 0, 0);
+            enhance(c, modes[i]);
+            const res = await T.recognize(c, 'eng', {
+              tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+              tessedit_pageseg_mode: '7'
+            });
+            const conf = Math.round(res.data.confidence || 0);
+            const plate = validPlate(res.data.text);
+            if (plate && conf > best.conf) best = { plate: plate, conf: conf };
+            if (plate && conf >= 65) break;
+          }
+          if (best.plate) {
+            input.value = best.plate;
+            readout.hidden = false;
+            readout.querySelector('strong').textContent = best.plate;
+            setStatus('Placa leída en la zona · ' + best.conf + '% de confianza. Verifica y registra.');
+            showSelect(false);
+          } else {
+            setStatus('No se pudo leer esa zona. Ajusta el rectángulo y reintenta.');
+          }
+        } catch (e) {
+          setStatus('OCR no disponible sin conexión. Escribe la placa.');
+        }
       }
 
       function setupTools(track) {
@@ -416,9 +553,10 @@
         if (busy) return;
         busy = true;
 
+        fotoHD = snapshot(video, 1280);
         foto = snapshot(video, 560);
         const img = el.querySelector('img');
-        img.src = foto;
+        img.src = fotoHD;
         img.hidden = false;
         video.style.display = 'none';
         el.querySelector('.cam-frame').style.display = 'none';
@@ -429,10 +567,9 @@
 
         if (general) {
           readout.hidden = true;
-          setStatus('No se detectó placa. Foto general adjunta; escribe la placa.');
+          showSelect(true);
+          setStatus('No se detectó placa. Ajusta el rectángulo a la placa y pulsa "Leer placa seleccionada".');
           busy = false;
-          input.focus();
-          input.select();
           return;
         }
 
@@ -441,6 +578,7 @@
           readout.hidden = false;
           readout.querySelector('strong').textContent = pre.plate;
           setStatus('Placa leída automáticamente · ' + pre.conf + '% de confianza. Verifica y registra.');
+          showSelect(false);
           busy = false;
           input.focus();
           input.select();
@@ -458,10 +596,12 @@
             setStatus('Placa leída · ' + r.conf + '% de confianza. Verifica y registra.');
           } else {
             readout.hidden = true;
-            setStatus('No se pudo leer con claridad. Acércate y repite, o escríbela.');
+            showSelect(true);
+            setStatus('No se pudo leer. Ajusta el rectángulo a la placa y pulsa "Leer placa seleccionada".');
           }
         } catch (e) {
-          setStatus('OCR no disponible sin conexión. Escribe la placa y usa la foto.');
+          showSelect(true);
+          setStatus('OCR no disponible sin conexión. Selecciona la placa o escríbela.');
         }
         busy = false;
         input.focus();
@@ -471,6 +611,9 @@
       function again() {
         clearTimers();
         foto = null;
+        fotoHD = null;
+        sel = null;
+        showSelect(false);
         busy = false;
         scanning = false;
         const img = el.querySelector('img');
@@ -496,6 +639,45 @@
         close(plate);
       }
 
+      const selOverlay = el.querySelector('[data-select]');
+      selOverlay.addEventListener('pointerdown', (e) => {
+        if (!sel) return;
+        e.preventDefault();
+        const r = selOverlay.getBoundingClientRect();
+        const px = e.clientX - r.left;
+        const py = e.clientY - r.top;
+        try { selOverlay.setPointerCapture(e.pointerId); } catch (err) { /* pointer sintético */ }
+        if (px >= sel.x && px <= sel.x + sel.w && py >= sel.y && py <= sel.y + sel.h) {
+          dragSel = { mode: 'move', dx: px - sel.x, dy: py - sel.y };
+        } else {
+          sel = { x: px, y: py, w: 1, h: 1 };
+          dragSel = { mode: 'draw', x0: px, y0: py };
+          renderSel();
+        }
+      });
+      selOverlay.addEventListener('pointermove', (e) => {
+        if (!dragSel) return;
+        const r = selOverlay.getBoundingClientRect();
+        const px = Math.max(0, Math.min(r.width, e.clientX - r.left));
+        const py = Math.max(0, Math.min(r.height, e.clientY - r.top));
+        if (dragSel.mode === 'move') {
+          sel.x = px - dragSel.dx;
+          sel.y = py - dragSel.dy;
+        } else {
+          sel.x = Math.min(dragSel.x0, px);
+          sel.y = Math.min(dragSel.y0, py);
+          sel.w = Math.abs(px - dragSel.x0);
+          sel.h = Math.abs(py - dragSel.y0);
+        }
+        clampSel();
+        renderSel();
+      });
+      selOverlay.addEventListener('pointerup', () => {
+        dragSel = null;
+        if (sel && (sel.w < 30 || sel.h < 14)) defaultBox();
+        renderSel();
+      });
+
       el.addEventListener('click', (e) => {
         const act = e.target.closest('[data-cam]');
         if (!act) return;
@@ -505,6 +687,7 @@
         if (a === 'shot') shot(false);
         if (a === 'again') again();
         if (a === 'manual') submit(input.value);
+        if (a === 'readsel') readSelected();
       });
 
       input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(input.value); });
@@ -519,9 +702,10 @@
         const file = e.target.files && e.target.files[0];
         if (!file) return;
         clearTimers();
-        const data = await fileToData(file, 560);
+        const data = await fileToData(file, 1280);
         if (!data) return;
-        foto = data;
+        fotoHD = data;
+        foto = await resizeData(data, 560);
         const img = el.querySelector('img');
         img.src = data;
         img.hidden = false;
@@ -530,21 +714,9 @@
         el.querySelector('[data-cam="again"]').hidden = false;
         el.querySelector('[data-cam="shot"]').hidden = true;
         autoBadge.hidden = true;
-        setStatus('Leyendo imagen…');
-        try {
-          const T = await loadTesseract();
-          const res = await T.recognize(img, 'eng', { tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-' });
-          const plate = cleanPlate(res.data.text);
-          if (plate) {
-            input.value = plate;
-            readout.hidden = false;
-            readout.querySelector('strong').textContent = plate;
-            setStatus('Verifica la lectura y confirma.');
-          } else setStatus('No se reconoció. Escribe la placa manualmente.');
-        } catch (err) {
-          setStatus('OCR no disponible. Escribe la placa manualmente.');
-        }
-        input.focus();
+        readout.hidden = true;
+        showSelect(true);
+        setStatus('Ajusta el rectángulo a la placa y pulsa "Leer placa seleccionada".');
       });
 
       start();
