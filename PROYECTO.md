@@ -85,7 +85,8 @@ La separación no es cosmética: la portería no debe poder exportar el padrón,
 
 La interfaz de portería se reduce a **Accesos** y **Vehículos**, con un botón permanente **"Registrar entrada"** en la barra inferior (móvil) y en la barra superior (escritorio).
 - Tres formularios: **Vehículo**, **Residente**, **Visita**. La administración solo supervisa.
-- La acción principal es **"Escanear placa del vehículo"**: la cámara dispara **automáticamente a los 3 segundos**, muestra la foto y adjunta la evidencia al movimiento.
+- La cámara **escanea en continuo**: cuando detecta una placa válida, captura sola y la propone. Si no la encuentra en ~11 s, avisa **"encuadra la movilidad"** y toma una foto general.
+- Si la placa se ve muy pequeña o queda cortada, indica **"acércate"** o **"aléjate"** para lograr una buena toma.
 - El **tipo de vehículo** (auto, moto, camioneta, camión) se toma del padrón; en un ingreso temporal lo elige el guardia.
 - La placa se **coteja contra el padrón**: si existe, muestra residente, casa, modelo y si ya está dentro.
 - Si **no existe**, se registra un **ingreso temporal**: casa destino, motivo y **tiempo autorizado** (30 min a 8 h). No se agrega al padrón.

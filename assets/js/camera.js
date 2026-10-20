@@ -27,7 +27,7 @@
     return tesseractPromise;
   }
 
-  function preprocess(video, mode) {
+  function preprocess(video, mode, targetW) {
     const vw = video.videoWidth || 1280;
     const vh = video.videoHeight || 720;
     // Recorte ceñido a la zona donde el guardia encuadra la placa
@@ -35,10 +35,10 @@
     const sh = vh * 0.18;
     const sx = (vw - sw) / 2;
     const sy = (vh - sh) / 2;
-    const targetW = 1000;
+    const width = targetW || 1000;
     const canvas = document.createElement('canvas');
-    canvas.width = targetW;
-    canvas.height = Math.round(sh * (targetW / sw));
+    canvas.width = width;
+    canvas.height = Math.round(sh * (width / sw));
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
@@ -118,19 +118,44 @@
     return '';
   }
 
-  async function readPlate(video) {
+  function biggestWord(data, width) {
+    let best = null;
+    const words = data.words || [];
+    for (let i = 0; i < words.length; i++) {
+      const w = words[i];
+      const txt = String(w.text || '').replace(/[^A-Za-z0-9]/g, '');
+      if (txt.length < 3) continue;
+      const h = w.bbox.y1 - w.bbox.y0;
+      if (!best || h > best.height) {
+        best = { height: h, edge: w.bbox.x0 < 6 || w.bbox.x1 > width - 6 };
+      }
+    }
+    if (!best && data.lines && data.lines.length) {
+      const bb = data.lines[0].bbox;
+      best = { height: bb.y1 - bb.y0, edge: bb.x0 < 6 || bb.x1 > width - 6 };
+    }
+    return best;
+  }
+
+  async function readPlate(video, targetW, modes) {
     const T = await loadTesseract();
-    let best = { plate: '', conf: 0 };
-    const modes = ['gray', 'threshold'];
-    for (let i = 0; i < modes.length; i++) {
-      const canvas = preprocess(video, modes[i]);
+    const list = modes || ['gray', 'threshold'];
+    let best = { plate: '', conf: 0, h: 0, edge: false };
+    for (let i = 0; i < list.length; i++) {
+      const canvas = preprocess(video, list[i], targetW || 1000);
       const res = await T.recognize(canvas, 'eng', {
         tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
         tessedit_pageseg_mode: '7'
       });
       const conf = Math.round(res.data.confidence || 0);
       const plate = validPlate(res.data.text);
-      if (plate && conf > best.conf) best = { plate, conf };
+      const box = biggestWord(res.data, canvas.width);
+      if (plate && conf > best.conf) {
+        best = { plate: plate, conf: conf, h: box ? box.height : 0, edge: box ? box.edge : false };
+      } else if (!plate && box && box.height > best.h) {
+        best.h = box.height;
+        best.edge = box.edge;
+      }
       if (plate && conf >= 70) break;
     }
     return best;
@@ -189,7 +214,7 @@
         '<video autoplay playsinline muted></video>' +
         '<img hidden alt="Captura de la placa">' +
         '<div class="cam-frame"><span></span><span></span><span></span><span></span></div>' +
-        '<div class="cam-auto" data-auto hidden>AUTO · 3 s</div>' +
+        '<div class="cam-auto" data-auto hidden>ESCANEANDO</div>' +
         '<div class="cam-hint" data-hint>Acerca la cámara: la placa debe llenar el recuadro</div>' +
         '<div class="cam-readout" data-readout hidden><small>Placa detectada</small><strong>—</strong></div>' +
         '</div>' +
@@ -221,15 +246,23 @@
       const autoBadge = el.querySelector('[data-auto]');
 
       let foto = null;
-      let autoTimer = null;
-      let cdTimer = null;
+      let scanTimer = null;
       let startTimer = null;
       let busy = false;
+      let scanning = false;
+      let closed = false;
+      let startedAt = 0;
+      const hintEl = el.querySelector('[data-hint]');
 
       function setStatus(txt) { statusEl.textContent = txt || ''; }
-      function clearTimers() { clearTimeout(autoTimer); clearTimeout(startTimer); clearInterval(cdTimer); }
+      function setHint(txt, tone) {
+        hintEl.textContent = txt;
+        hintEl.dataset.tone = tone || '';
+      }
+      function clearTimers() { clearTimeout(scanTimer); clearTimeout(startTimer); }
 
       const close = (val) => {
+        closed = true;
         clearTimers();
         stop();
         el.remove();
@@ -237,24 +270,60 @@
         if (val && opts.onResult) opts.onResult(val, { manual: !foto, foto: foto });
       };
 
-      function beginCountdown() {
+      function startScan() {
         if (!opts.auto) return;
-        clearTimers();
-        let n = 3;
+        startedAt = Date.now();
         autoBadge.hidden = false;
-        autoBadge.textContent = 'AUTO · ' + n + ' s';
-        setStatus('Captura automática en ' + n + '…');
-        cdTimer = setInterval(() => {
-          n--;
-          if (n > 0) {
-            autoBadge.textContent = 'AUTO · ' + n + ' s';
-            setStatus('Captura automática en ' + n + '…');
+        autoBadge.textContent = 'ESCANEANDO';
+        setStatus('Buscando una placa…');
+        scanTimer = setTimeout(loopScan, 500);
+      }
+
+      async function loopScan() {
+        if (closed || !stream || scanning || foto) return;
+        scanning = true;
+        let r = { plate: '', conf: 0, h: 0, edge: false };
+        try {
+          r = await readPlate(video, 620, ['gray']);
+        } catch (e) {
+          scanning = false;
+          setStatus('OCR no disponible sin conexión. Toma la foto y escribe la placa.');
+          return;
+        }
+        scanning = false;
+        if (closed || foto) return;
+
+        if (r.plate && r.conf >= 45) {
+          setStatus('Placa detectada · ' + r.plate);
+          shot(false, r);
+          return;
+        }
+
+        const elapsed = Date.now() - startedAt;
+        if (r.h) {
+          if (r.h < 24) {
+            setHint('Acércate: la placa se ve pequeña', 'warn');
+            setStatus('Acércate un poco para leer la placa…');
+          } else if (r.h > 105 || r.edge) {
+            setHint('Aléjate un poco: la placa está muy cerca', 'warn');
+            setStatus('Aléjate un poco para encuadrarla…');
           } else {
-            clearInterval(cdTimer);
-            setStatus('Capturando…');
+            setHint('Mantén la placa dentro del recuadro', '');
+            setStatus('Leyendo placa…');
           }
-        }, 700);
-        autoTimer = setTimeout(() => { clearTimers(); shot(true); }, 2200);
+        } else if (elapsed > 6000) {
+          setHint('Encuadra la movilidad completa', 'warn');
+          setStatus('No se detecta placa. Encuadra la movilidad…');
+        } else {
+          setHint('Centra la placa dentro del recuadro', '');
+          setStatus('Buscando una placa…');
+        }
+
+        if (elapsed > 11000) {
+          shot(true, null, true);
+          return;
+        }
+        scanTimer = setTimeout(loopScan, 700);
       }
 
       async function start() {
@@ -264,7 +333,7 @@
             setStatus(window.isSecureContext
               ? 'No se pudo abrir la cámara. Usa una foto o escribe la placa.'
               : 'La cámara requiere http://localhost o HTTPS. Usa una foto o escribe la placa.');
-            el.querySelector('[data-hint]').hidden = true;
+            hintEl.hidden = true;
             autoBadge.hidden = true;
             video.style.display = 'none';
           }
@@ -281,22 +350,22 @@
           video.srcObject = stream;
           await video.play();
           setStatus('');
-          el.querySelector('[data-hint]').hidden = false;
+          hintEl.hidden = false;
           autoBadge.hidden = !opts.auto;
-          beginCountdown();
+          startScan();
         } catch (err) {
           clearTimeout(startTimer);
           const secure = window.isSecureContext;
           setStatus(secure
             ? 'No se pudo abrir la cámara. Usa una foto o escribe la placa.'
             : 'La cámara requiere http://localhost o HTTPS. Usa una foto o escribe la placa.');
-          el.querySelector('[data-hint]').hidden = true;
+          hintEl.hidden = true;
           autoBadge.hidden = true;
           video.style.display = 'none';
         }
       }
 
-      async function shot(auto) {
+      async function shot(auto, pre, general) {
         clearTimers();
         if (!stream || !video.videoWidth) {
           input.focus();
@@ -312,15 +381,35 @@
         img.hidden = false;
         video.style.display = 'none';
         el.querySelector('.cam-frame').style.display = 'none';
-        el.querySelector('[data-hint]').hidden = true;
+        hintEl.hidden = true;
         el.querySelector('[data-cam="again"]').hidden = false;
         el.querySelector('[data-cam="shot"]').hidden = true;
         autoBadge.hidden = true;
 
+        if (general) {
+          readout.hidden = true;
+          setStatus('No se detectó placa. Foto general adjunta; escribe la placa.');
+          busy = false;
+          input.focus();
+          input.select();
+          return;
+        }
+
+        if (pre && pre.plate) {
+          input.value = pre.plate;
+          readout.hidden = false;
+          readout.querySelector('strong').textContent = pre.plate;
+          setStatus('Placa leída automáticamente · ' + pre.conf + '% de confianza. Verifica y registra.');
+          busy = false;
+          input.focus();
+          input.select();
+          return;
+        }
+
         setStatus(auto ? 'Foto capturada · leyendo placa…' : 'Procesando imagen…');
 
         try {
-          const r = await readPlate(video);
+          const r = await readPlate(video, 1000, ['gray', 'threshold']);
           if (r.plate && r.conf >= 40) {
             input.value = r.plate;
             readout.hidden = false;
@@ -328,7 +417,7 @@
             setStatus('Placa leída · ' + r.conf + '% de confianza. Verifica y registra.');
           } else {
             readout.hidden = true;
-            setStatus('No se pudo leer con claridad. Acerca la cámara a la placa y repite, o escríbela.');
+            setStatus('No se pudo leer con claridad. Acércate y repite, o escríbela.');
           }
         } catch (e) {
           setStatus('OCR no disponible sin conexión. Escribe la placa y usa la foto.');
@@ -342,6 +431,7 @@
         clearTimers();
         foto = null;
         busy = false;
+        scanning = false;
         const img = el.querySelector('img');
         img.hidden = true;
         video.style.display = '';
@@ -351,7 +441,8 @@
         readout.hidden = true;
         input.value = '';
         setStatus('');
-        beginCountdown();
+        setHint('Centra la placa dentro del recuadro', '');
+        startScan();
       }
 
       function submit(val) {
@@ -369,7 +460,7 @@
         if (!act) return;
         const a = act.dataset.cam;
         if (a === 'close') close(null);
-        if (a === 'switch') { facing = facing === 'environment' ? 'user' : 'environment'; stop(); start(); }
+        if (a === 'switch') { facing = facing === 'environment' ? 'user' : 'environment'; foto = null; scanning = false; stop(); start(); }
         if (a === 'shot') shot(false);
         if (a === 'again') again();
         if (a === 'manual') submit(input.value);
