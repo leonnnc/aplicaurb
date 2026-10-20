@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0B1526" />
+  <meta name="description" content="Panel de control de accesos para urbanizaciones: casas, residentes, vehículos y permanencia en tiempo real." />
+  <title>URB San Lucas · Control de Accesos</title>
+  <link rel="stylesheet" href="assets/css/styles.css?v=17" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230F766E'/%3E%3Cpath d='M8 22V12l8-5 8 5v10' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E" />
+</head>
+<body>
+
+<!-- ═══════════════ ICONOS ═══════════════ -->
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4Z"/><path d="M9 4v13M15 6.5v13"/></symbol>
+  <symbol id="i-door" viewBox="0 0 24 24"><path d="M4 21h16"/><path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M14 12h.01"/></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24"><path d="M5 17h14M4 17v-4l2-5h12l2 5v4"/><path d="M3 13h18"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24"><path d="M3 16V6h11v10"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></symbol>
+  <symbol id="i-moto" viewBox="0 0 24 24"><circle cx="5.5" cy="17" r="3"/><circle cx="18.5" cy="17" r="3"/><path d="M5.5 17h4l3-6h5l1 6"/><path d="M12 8h3"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M16 5.2a3.2 3.2 0 0 1 0 6.1"/><path d="M18 14.8c1.9.7 3 2.4 3 4.7"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 16v-5M12.5 16V7M17 16v-8"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.4-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 4a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.4l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21 11a2 2 0 1 1 0 4 1.7 1.7 0 0 0-1.6 0Z"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13.5" r="3.5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m4 12.5 5 5L20 6.5"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.2 2"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v5.5c0 4.3 2.9 7.6 7 9.5 4.1-1.9 7-5.2 7-9.5V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M8 11l4 4 4-4"/><path d="M5 20h14"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6Z"/><path d="M10.5 19a2 2 0 0 0 3 0"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16M4 12h16"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="m4 10 8-6 8 6v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1Z"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"/><path d="M15 8l4 4-4 4M19 12H9"/></symbol>
+  <symbol id="i-switch" viewBox="0 0 24 24"><path d="M4 8h13l-3-3M20 16H7l3 3"/></symbol>
+  <symbol id="i-time" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4.5l3 1.8"/></symbol>
+</svg>
+
+<!-- ═══════════════ LOGIN ═══════════════ -->
+<section id="login" class="login">
+  <div class="login-media">
+    <div class="login-media-overlay"></div>
+    <div class="login-media-copy">
+      <span class="pill pill-light">URB San Lucas</span>
+      <h2>100 casas.<br>Una sola puerta.<br>Todo bajo control.</h2>
+      <p>Accesos, vehículos y personas en un panel único, en tiempo real.</p>
+    </div>
+  </div>
+
+  <div class="login-panel">
+    <div class="brand brand-dark">
+      <span class="brand-mark"><svg><use href="#i-home"/></svg></span>
+      <span class="brand-text"><strong>URB San Lucas</strong><small>Control de accesos</small></span>
+    </div>
+
+    <div class="login-form">
+      <h1>Bienvenido de vuelta</h1>
+      <p class="muted">Selecciona tu perfil para entrar al panel de la urbanización.</p>
+
+      <div class="role-pick" id="rolePick">
+        <button class="role-card is-active" data-role="admin" type="button">
+          <span class="role-icon"><svg><use href="#i-shield"/></svg></span>
+          <span class="role-body"><strong>Administración</strong><small>Control total, reportes y padrón</small></span>
+          <span class="role-check"><svg><use href="#i-check"/></svg></span>
+        </button>
+        <button class="role-card" data-role="guardia" type="button">
+          <span class="role-icon"><svg><use href="#i-door"/></svg></span>
+          <span class="role-body"><strong>Portería / Garita</strong><small>Registro de entradas y salidas</small></span>
+          <span class="role-check"><svg><use href="#i-check"/></svg></span>
+        </button>
+      </div>
+
+      <button id="loginBtn" class="btn btn-primary btn-lg btn-block" type="button">
+        Ingresar al panel <svg class="btn-ico"><use href="#i-arrow"/></svg>
+      </button>
+
+      <p class="login-note">
+        <svg><use href="#i-shield"/></svg>
+        Demo local: los datos se guardan solo en este navegador.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ APP ═══════════════ -->
+<div id="app" class="app" hidden>
+  <div class="scrim" id="scrim" data-action="close-menu"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-mark"><svg><use href="#i-home"/></svg></span>
+      <span class="brand-text"><strong>URB San Lucas</strong><small>Control de accesos</small></span>
+    </div>
+
+    <nav class="nav" id="nav">
+      <p class="nav-label">Operación</p>
+      <a class="nav-item is-active" data-view="panel"><svg><use href="#i-panel"/></svg><span>Panel</span></a>
+      <a class="nav-item" data-view="mapa"><svg><use href="#i-map"/></svg><span>Mapa de la urbanización</span></a>
+      <a class="nav-item" data-view="accesos"><svg><use href="#i-door"/></svg><span>Accesos</span></a>
+      <a class="nav-item" data-view="vehiculos"><svg><use href="#i-car"/></svg><span>Vehículos</span></a>
+      <p class="nav-label">Gestión</p>
+      <a class="nav-item" data-view="residentes"><svg><use href="#i-users"/></svg><span>Casas y residentes</span></a>
+      <a class="nav-item" data-view="reportes"><svg><use href="#i-chart"/></svg><span>Reportes</span></a>
+      <a class="nav-item" data-view="ajustes"><svg><use href="#i-settings"/></svg><span>Ajustes</span></a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="gate-status">
+        <span class="gate-dot"></span>
+        <div>
+          <strong>Garita principal</strong>
+          <small id="gateStatusText">Operativa · en línea</small>
+        </div>
+      </div>
+      <div class="user-chip">
+        <span class="avatar" id="userAvatar">AL</span>
+        <div class="user-meta">
+          <strong id="userName">Ana Lozano</strong>
+          <small id="userRole">Administración</small>
+        </div>
+        <button class="icon-btn icon-btn-sm" data-action="logout" title="Salir"><svg><use href="#i-logout"/></svg></button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="shell">
+    <header class="topbar">
+      <button class="icon-btn only-mobile" data-action="open-menu" aria-label="Menú"><svg><use href="#i-menu"/></svg></button>
+
+      <div class="topbar-title">
+        <h1 id="pageTitle">Panel general</h1>
+        <p id="pageSub">Resumen operativo de la urbanización</p>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="clock" id="clock"><svg><use href="#i-clock"/></svg><span>--:--</span></div>
+        <button class="icon-btn only-desktop" data-action="alerts" aria-label="Alertas">
+          <svg><use href="#i-bell"/></svg><i class="badge-dot"></i>
+        </button>
+        <button class="btn btn-primary" data-action="quick-entry">
+          <svg class="btn-ico"><use href="#i-plus"/></svg><span class="only-desktop">Registrar entrada</span><span class="only-mobile">Entrada</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="view" id="view"></main>
+  </div>
+
+  <nav class="bottomnav" id="bottomnav">
+    <a data-view="panel" class="is-active"><svg><use href="#i-panel"/></svg><span>Panel</span></a>
+    <a data-view="mapa"><svg><use href="#i-map"/></svg><span>Mapa</span></a>
+    <a data-view="accesos"><svg><use href="#i-door"/></svg><span>Accesos</span></a>
+    <button class="bn-entry" data-action="quick-entry" aria-label="Registrar entrada">
+      <span class="bn-fab"><svg><use href="#i-plus"/></svg><em>Entrada</em></span>
+    </button>
+    <a data-view="vehiculos"><svg><use href="#i-car"/></svg><span>Vehículos</span></a>
+    <a data-view="residentes"><svg><use href="#i-users"/></svg><span>Padrón</span></a>
+  </nav>
+</div>
+
+<div id="modalRoot"></div>
+<div id="sheetRoot"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="assets/js/data.js?v=17"></script>
+<script src="assets/js/core.js?v=17"></script>
+<script src="assets/js/camera.js?v=17"></script>
+<script src="assets/js/views-panel.js?v=17"></script>
+<script src="assets/js/views-map.js?v=17"></script>
+<script src="assets/js/views-access.js?v=17"></script>
+<script src="assets/js/views-records.js?v=17"></script>
+<script src="assets/js/views-reports.js?v=17"></script>
+<script src="assets/js/app.js?v=17"></script>
+</body>
+</html>
