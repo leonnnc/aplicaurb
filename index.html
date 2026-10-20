@@ -6,8 +6,13 @@
   <meta name="theme-color" content="#0B1526" />
   <meta name="description" content="Panel de control de accesos para urbanizaciones: casas, residentes, vehículos y permanencia en tiempo real." />
   <title>URB San Lucas · Control de Accesos</title>
-  <link rel="stylesheet" href="assets/css/styles.css?v=23" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=26" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230F766E'/%3E%3Cpath d='M8 22V12l8-5 8 5v10' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="URB San Lucas" />
 </head>
 <body>
   <!-- Pantalla de bienvenida -->
@@ -43,6 +48,7 @@
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.2 2"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v5.5c0 4.3 2.9 7.6 7 9.5 4.1-1.9 7-5.2 7-9.5V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></symbol>
   <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M8 11l4 4 4-4"/><path d="M5 20h14"/></symbol>
+  <symbol id="i-flash" viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6Z"/><path d="M10.5 19a2 2 0 0 0 3 0"/></symbol>
   <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16M4 12h16"/></symbol>
@@ -89,10 +95,13 @@
       <button id="loginBtn" class="btn btn-primary btn-lg btn-block" type="button">
         Ingresar al panel <svg class="btn-ico"><use href="#i-arrow"/></svg>
       </button>
+      <button type="button" class="btn btn-ghost btn-block" id="installBtn" data-install hidden style="margin-top:10px">
+        <svg class="btn-ico"><use href="#i-download"/></svg> Instalar en el móvil
+      </button>
 
       <p class="login-note">
         <svg><use href="#i-shield"/></svg>
-        v2.2 · la información se guarda solo en este navegador.
+        v2.3 · la información se guarda solo en este navegador.
       </p>
     </div>
   </div>
@@ -178,14 +187,14 @@
 <div id="sheetRoot"></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script src="assets/js/data.js?v=23"></script>
-<script src="assets/js/core.js?v=23"></script>
-<script src="assets/js/camera.js?v=23"></script>
-<script src="assets/js/views-panel.js?v=23"></script>
-<script src="assets/js/views-map.js?v=23"></script>
-<script src="assets/js/views-access.js?v=23"></script>
-<script src="assets/js/views-records.js?v=23"></script>
-<script src="assets/js/views-reports.js?v=23"></script>
-<script src="assets/js/app.js?v=23"></script>
+<script src="assets/js/data.js?v=26"></script>
+<script src="assets/js/core.js?v=26"></script>
+<script src="assets/js/camera.js?v=26"></script>
+<script src="assets/js/views-panel.js?v=26"></script>
+<script src="assets/js/views-map.js?v=26"></script>
+<script src="assets/js/views-access.js?v=26"></script>
+<script src="assets/js/views-records.js?v=26"></script>
+<script src="assets/js/views-reports.js?v=26"></script>
+<script src="assets/js/app.js?v=26"></script>
 </body>
 </html>

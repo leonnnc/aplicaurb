@@ -333,6 +333,18 @@ svg { display: block; }
 
 .cam-auto::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #5EEAD4; display: inline-block; margin-right: 6px; animation: camPulse 1.2s ease-in-out infinite; }
 @keyframes camPulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+.cam-tools { display: flex; align-items: center; gap: 6px; }
+.cam-tool {
+  min-width: 40px; height: 36px; padding: 0 10px; border-radius: 10px;
+  background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.18);
+  color: #fff; font-size: 12px; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.cam-tool.is-on { background: #F59E0B; border-color: #F59E0B; color: #111; }
+.cam-tool svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.cam-top h3 { flex: 1; min-width: 0; }
+.install-steps { margin: 0; padding-left: 20px; font-size: 13px; color: var(--muted); line-height: 1.9; }
+.install-steps strong { color: var(--ink); }
 .cam-auto {
   position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 3;
   background: rgba(15,118,110,.92); color: #fff; font-size: 10px; font-weight: 700;

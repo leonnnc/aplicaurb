@@ -188,7 +188,7 @@
       '<div class="row-between" style="padding:8px 0"><span class="hint">Residentes</span><strong>' + DB.state.residentes.length + '</strong></div>' +
       '<div class="row-between" style="padding:8px 0"><span class="hint">Vehículos</span><strong>' + DB.state.vehiculos.length + '</strong></div>' +
       '<div class="row-between" style="padding:8px 0"><span class="hint">Eventos</span><strong>' + DB.state.eventos.length + '</strong></div>' +
-      '<div class="row-between" style="padding:8px 0"><span class="hint">Versión</span><strong>2.2</strong></div>' +
+      '<div class="row-between" style="padding:8px 0"><span class="hint">Versión</span><strong>2.3</strong></div>' +
       '</div></section>' +
 
       '<section class="card"><div class="card-head"><div><h3>Sobre el proyecto</h3><p>URB San Lucas · control de accesos</p></div></div>' +

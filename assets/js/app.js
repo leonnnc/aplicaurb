@@ -36,6 +36,8 @@
       DB.load();
       App.bindLogin();
       App.bindGlobal();
+      App.bindInstall();
+      App.registerSW();
       App.clock();
       setInterval(App.clock, 20000);
       global.App = App;
@@ -66,6 +68,60 @@
       } else {
         start();
       }
+    },
+
+    registerSW() {
+      if (!('serviceWorker' in navigator)) return;
+      const secure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+      if (!secure) return;
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    },
+
+    bindInstall() {
+      const btns = Array.from(document.querySelectorAll('[data-install]'));
+      if (!btns.length) return;
+      const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+      if (standalone) { btns.forEach((b) => { b.hidden = true; }); return; }
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const isMobile = isIOS || /android/i.test(navigator.userAgent) || window.matchMedia('(max-width: 820px)').matches;
+      let deferred = null;
+      const show = () => btns.forEach((b) => { b.hidden = false; });
+      if (isMobile) show();
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferred = e;
+        if (isMobile) show();
+      });
+      window.addEventListener('appinstalled', () => btns.forEach((b) => { b.hidden = true; }));
+      const steps = isIOS
+        ? '<ol class="install-steps"><li>Abre esta página en <strong>Safari</strong>.</li><li>Toca <strong>Compartir</strong> (el cuadro con la flecha).</li><li>Elige <strong>Añadir a pantalla de inicio</strong>.</li><li>Confirma con <strong>Añadir</strong>.</li></ol>'
+        : '<ol class="install-steps"><li>Abre el menú <strong>⋮</strong> de Chrome.</li><li>Toca <strong>Instalar aplicación</strong> o <strong>Añadir a pantalla de inicio</strong>.</li><li>Confirma.</li></ol>';
+      const showSteps = () => {
+        const hasPrompt = !!deferred;
+        const foot = '<button class="btn btn-ghost" data-close>Cancelar</button>' +
+          (hasPrompt
+            ? '<button class="btn btn-primary" id="doInstall">Abrir instalador</button>'
+            : '<button class="btn btn-primary" data-close>Entendido</button>');
+        const close = UI.modal({
+          title: isIOS ? 'Instalar en iPhone' : 'Instalar en el móvil',
+          sub: 'Se abre como app, sin la barra del navegador',
+          body: steps,
+          foot: foot
+        });
+        const go = document.getElementById('doInstall');
+        if (go) {
+          go.addEventListener('click', () => {
+            close();
+            const evt = deferred;
+            deferred = null;
+            try { if (evt) evt.prompt(); } catch (e) { /* sin diálogo nativo */ }
+          });
+        }
+      };
+
+      btns.forEach((b) => b.addEventListener('click', showSteps));
     },
 
     bindLogin() {

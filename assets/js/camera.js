@@ -208,7 +208,11 @@
         '<div class="cam-top">' +
         '<button class="icon-btn" data-cam="close" aria-label="Cerrar" style="color:#fff">' + U.icon('x') + '</button>' +
         '<h3>Escanear placa</h3>' +
+        '<div class="cam-tools">' +
+        '<button class="cam-tool" data-cam="torch" aria-label="Linterna" hidden>' + U.icon('flash') + '</button>' +
+        '<button class="cam-tool" data-cam="zoom" aria-label="Zoom" hidden>1×</button>' +
         '<button class="icon-btn" data-cam="switch" aria-label="Cambiar cámara" style="color:#fff">' + U.icon('switch') + '</button>' +
+        '</div>' +
         '</div>' +
         '<div class="cam-stage">' +
         '<video autoplay playsinline muted></video>' +
@@ -326,6 +330,42 @@
         scanTimer = setTimeout(loopScan, 700);
       }
 
+      function setupTools(track) {
+        if (!track) return;
+        const caps = track.getCapabilities ? track.getCapabilities() : {};
+        const zoomBtn = el.querySelector('[data-cam="zoom"]');
+        const torchBtn = el.querySelector('[data-cam="torch"]');
+
+        if (zoomBtn && caps.zoom && caps.zoom.max > caps.zoom.min) {
+          const min = caps.zoom.min;
+          const max = caps.zoom.max;
+          const step = Math.max(1, Math.round((max - min) / 4));
+          let z = track.getSettings().zoom || min;
+          const label = () => { zoomBtn.textContent = Math.round(1 + (z - min) / step) + '×'; };
+          zoomBtn.hidden = false;
+          label();
+          zoomBtn.addEventListener('click', async () => {
+            z = z + step > max ? min : z + step;
+            try {
+              await track.applyConstraints({ advanced: [{ zoom: z }] });
+              label();
+            } catch (e) { zoomBtn.hidden = true; }
+          });
+        }
+
+        if (torchBtn && caps.torch) {
+          let on = false;
+          torchBtn.hidden = false;
+          torchBtn.addEventListener('click', async () => {
+            on = !on;
+            try {
+              await track.applyConstraints({ advanced: [{ torch: on }] });
+              torchBtn.classList.toggle('is-on', on);
+            } catch (e) { torchBtn.hidden = true; }
+          });
+        }
+      }
+
       async function start() {
         setStatus('Encendiendo cámara…');
         startTimer = setTimeout(() => {
@@ -349,6 +389,7 @@
           clearTimeout(startTimer);
           video.srcObject = stream;
           await video.play();
+          setupTools(stream.getVideoTracks()[0]);
           setStatus('');
           hintEl.hidden = false;
           autoBadge.hidden = !opts.auto;
