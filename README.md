@@ -24,7 +24,7 @@ La cámara requiere `http://localhost` o HTTPS, por eso el `.bat` levanta un ser
 | Vehículos | Padrón, estado, permanencia e historial por placa |
 | Residentes | Padrón de 100 casas con roles y contacto |
 | Reportes | Entradas/salidas emparejadas, duración, filtros y CSV |
-| Ajustes | Configuración, respaldo JSON, restaurar demo o vaciar |
+| Ajustes | Configuración, padrón de casas, respaldo JSON o vaciar |
 
 ## Roles
 
@@ -35,14 +35,16 @@ El administrador puede activar o desactivar las vistas de portería en **Ajustes
 
 ## Datos
 
-Todo se guarda en `localStorage` del navegador. La demo genera:
+El padrón arranca vacío. Todo se guarda en `localStorage` del navegador.
 
 - 100 casas (manzanas A–D)
 - ~200 residentes
 - ~90 vehículos (autos, camionetas y motos)
 - ~380 eventos de los últimos 3 días
 
-Para reiniciar: **Ajustes → Restaurar demo**.
+Para reiniciar: **Ajustes → Empezar de cero**.
+
+Para crear el padrón: **Ajustes → Padrón de casas** (manzanas × lotes).
 
 ## Estructura
 
@@ -52,7 +54,7 @@ assets/
   css/styles.css
   img/hero.png
   js/
-    data.js          modelo + generador demo
+    data.js          modelo de datos y almacenamiento
     core.js          utilidades, estancias, estadísticas
     camera.js        cámara + OCR opcional
     views-panel.js
@@ -69,7 +71,7 @@ PROYECTO.md          documento de idea, alcance y arquitectura
 
 - Los datos viven solo en el navegador: no hay multiusuario ni sincronización entre dispositivos.
 - El OCR es opcional (Tesseract.js por CDN) y depende de luz y ángulo; en producción se recomienda una API LPR o cámara fija.
-- No hay autenticación real: el login es un selector de rol para demostración.
+- No hay autenticación real: el login es un selector de rol local.
 - Sin backend no hay evidencia fotográfica persistente ni auditoría de cambios.
 
 La propuesta de producción (PWA offline + Supabase/Postgres + roles + evidencias) está en [PROYECTO.md](PROYECTO.md).

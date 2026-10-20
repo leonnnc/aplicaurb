@@ -27,35 +27,113 @@
     return tesseractPromise;
   }
 
-  function preprocess(video) {
+  function preprocess(video, mode) {
     const vw = video.videoWidth || 1280;
     const vh = video.videoHeight || 720;
-    const sx = vw * 0.08, sw = vw * 0.84;
-    const sy = vh * 0.30, sh = vh * 0.40;
+    // Recorte ceñido a la zona donde el guardia encuadra la placa
+    const sw = vw * 0.40;
+    const sh = vh * 0.18;
+    const sx = (vw - sw) / 2;
+    const sy = (vh - sh) / 2;
+    const targetW = 1000;
     const canvas = document.createElement('canvas');
-    const scale = Math.min(1, 900 / sw);
-    canvas.width = Math.round(sw * scale);
-    canvas.height = Math.round(sh * scale);
+    canvas.width = targetW;
+    canvas.height = Math.round(sh * (targetW / sw));
     const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
 
     const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const d = img.data;
     for (let i = 0; i < d.length; i += 4) {
       const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-      const v = g > 118 ? Math.min(255, (g - 118) * 2.3 + 118) : Math.max(0, g * 0.55);
+      let v;
+      if (mode === 'threshold') v = g > 125 ? 255 : 0;
+      else v = Math.max(0, Math.min(255, (g - 128) * 1.9 + 128));
       d[i] = d[i + 1] = d[i + 2] = v;
     }
     ctx.putImageData(img, 0, 0);
     return canvas;
   }
 
-  function cleanPlate(text) {
-    const raw = String(text || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (raw.length < 5) return '';
-    const six = raw.slice(0, 6);
-    if (/^[A-Z]{3}[0-9]{3}$/.test(six)) return six.slice(0, 3) + '-' + six.slice(3);
-    return six;
+  /* Valida y corrige confusiones típicas (O/0, I/1, S/5, B/8, G/6, Z/2).
+     Devuelve "" si no cumple un formato real: así no se muestra basura. */
+  function validPlate(text) {
+    const s = String(text || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (s.length < 5 || s.length > 7) return '';
+    const isL = (c) => /[A-Z]/.test(c);
+    const isD = (c) => /[0-9]/.test(c);
+    const toL = { 0: 'O', 1: 'I', 5: 'S', 8: 'B', 6: 'G', 2: 'Z' };
+    const toD = { O: '0', Q: '0', D: '0', I: '1', S: '5', B: '8', G: '6', Z: '2' };
+
+    function build(len, letterCount) {
+      let out = '';
+      let changes = 0;
+      for (let i = 0; i < len; i++) {
+        const ch = s[i];
+        if (i < letterCount) {
+          if (isL(ch)) out += ch;
+          else if (toL[ch]) { out += toL[ch]; changes++; }
+          else return '';
+        } else {
+          if (isD(ch)) out += ch;
+          else if (toD[ch]) { out += toD[ch]; changes++; }
+          else return '';
+        }
+      }
+      return changes <= 2 ? out : '';
+    }
+
+    function buildDigitsFirst(len, digitCount) {
+      let out = '';
+      let changes = 0;
+      for (let i = 0; i < len; i++) {
+        const ch = s[i];
+        if (i < digitCount) {
+          if (isD(ch)) out += ch;
+          else if (toD[ch]) { out += toD[ch]; changes++; }
+          else return '';
+        } else {
+          if (isL(ch)) out += ch;
+          else if (toL[ch]) { out += toL[ch]; changes++; }
+          else return '';
+        }
+      }
+      return changes <= 2 ? out : '';
+    }
+
+    if (s.length === 6) {
+      const auto = build(6, 3);
+      if (/^[A-Z]{3}[0-9]{3}$/.test(auto)) return auto.slice(0, 3) + '-' + auto.slice(3);
+      const moto = buildDigitsFirst(6, 4);
+      if (/^[0-9]{4}[A-Z]{2}$/.test(moto)) return moto.slice(0, 4) + '-' + moto.slice(4);
+      return '';
+    }
+
+    if (s.length === 5) {
+      const moto = buildDigitsFirst(5, 4);
+      if (/^[0-9]{4}[A-Z]$/.test(moto)) return moto.slice(0, 4) + '-' + moto.slice(4);
+    }
+    return '';
+  }
+
+  async function readPlate(video) {
+    const T = await loadTesseract();
+    let best = { plate: '', conf: 0 };
+    const modes = ['gray', 'threshold'];
+    for (let i = 0; i < modes.length; i++) {
+      const canvas = preprocess(video, modes[i]);
+      const res = await T.recognize(canvas, 'eng', {
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+        tessedit_pageseg_mode: '7'
+      });
+      const conf = Math.round(res.data.confidence || 0);
+      const plate = validPlate(res.data.text);
+      if (plate && conf > best.conf) best = { plate, conf };
+      if (plate && conf >= 70) break;
+    }
+    return best;
   }
 
   /* Foto de evidencia: ancho máximo 560 px, JPEG comprimido */
@@ -112,7 +190,7 @@
         '<img hidden alt="Captura de la placa">' +
         '<div class="cam-frame"><span></span><span></span><span></span><span></span></div>' +
         '<div class="cam-auto" data-auto hidden>AUTO · 3 s</div>' +
-        '<div class="cam-hint" data-hint>Encuadra la placa dentro del recuadro</div>' +
+        '<div class="cam-hint" data-hint>Acerca la cámara: la placa debe llenar el recuadro</div>' +
         '<div class="cam-readout" data-readout hidden><small>Placa detectada</small><strong>—</strong></div>' +
         '</div>' +
         '<div class="cam-bottom">' +
@@ -229,7 +307,6 @@
         busy = true;
 
         foto = snapshot(video, 560);
-        const canvas = preprocess(video);
         const img = el.querySelector('img');
         img.src = foto;
         img.hidden = false;
@@ -243,25 +320,15 @@
         setStatus(auto ? 'Foto capturada · leyendo placa…' : 'Procesando imagen…');
 
         try {
-          const T = await Promise.race([
-            loadTesseract(),
-            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 11000))
-          ]);
-          const res = await T.recognize(canvas, 'eng', {
-            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-',
-            logger: (m) => {
-              if (m.status === 'recognizing text') setStatus('Leyendo placa… ' + Math.round(m.progress * 100) + '%');
-            }
-          });
-          const plate = cleanPlate(res.data.text);
-          const conf = Math.round(res.data.confidence || 0);
-          if (plate) {
-            input.value = plate;
+          const r = await readPlate(video);
+          if (r.plate && r.conf >= 40) {
+            input.value = r.plate;
             readout.hidden = false;
-            readout.querySelector('strong').textContent = plate;
-            setStatus('Placa leída · ' + conf + '% de confianza. Verifica y registra.');
+            readout.querySelector('strong').textContent = r.plate;
+            setStatus('Placa leída · ' + r.conf + '% de confianza. Verifica y registra.');
           } else {
-            setStatus('No se reconoció la placa. Corrige el texto o repite la foto.');
+            readout.hidden = true;
+            setStatus('No se pudo leer con claridad. Acerca la cámara a la placa y repite, o escríbela.');
           }
         } catch (e) {
           setStatus('OCR no disponible sin conexión. Escribe la placa y usa la foto.');
@@ -352,7 +419,7 @@
       return { close: () => close(null) };
     }
 
-    return { open };
+    return { open, validPlate };
   }
 
   global.Camera = Camera();

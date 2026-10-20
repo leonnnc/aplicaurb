@@ -124,8 +124,14 @@
     const st = U.stats();
     const hora = new Date().getHours();
     const saludo = hora < 12 ? 'Buenos días' : hora < 19 ? 'Buenas tardes' : 'Buenas noches';
+    const vacio = DB.state.casas.length === 0;
 
     root.innerHTML =
+      (vacio ? '<section class="card" style="margin-bottom:16px;border-color:#BAE6FD;background:#F0F9FF"><div class="card-body row" style="gap:12px;padding:14px 16px">' +
+        '<span class="kpi-ico">' + U.icon('home') + '</span>' +
+        '<div style="flex:1;min-width:0"><strong style="font-size:13.5px">Tu urbanización aún no tiene casas</strong>' +
+        '<div class="hint">Genera los lotes en Ajustes para empezar a registrar accesos.</div></div>' +
+        '<button class="btn btn-primary btn-sm" data-view="ajustes">Configurar</button></div></section>' : '') +
       '<div class="row-between wrap" style="margin-bottom:14px">' +
       '<div><p style="font-size:12.5px;color:var(--muted)">' + saludo + ', ' + U.esc((DB.state.config.admin || '').split(' ')[0] || 'admin') + '. ' +
       'Esto es lo que pasa hoy en ' + U.esc(DB.state.config.nombre) + '.</p></div>' +

@@ -114,7 +114,7 @@ La interfaz de portería se reduce a **Accesos** y **Vehículos**, con un botón
 ### 5.7 Ajustes
 - Nombre y dirección de la urb, administrador, teléfono.
 - Horas máximas de visita y patrón de placa configurable.
-- Respaldo completo en **JSON**, restaurar demo o empezar de cero.
+- Respaldo completo en **JSON** o empezar de cero.
 
 ---
 
@@ -216,7 +216,7 @@ Cámara LPR fija ────┘                    │
 
 | Nivel | Tecnología | Cuándo |
 |---|---|---|
-| Móvil (demo) | Tesseract.js en el dispositivo | Ya incluido; gratis; depende de luz y ángulo |
+| Móvil | Tesseract.js en el dispositivo | Ya incluido; gratis; exige que la placa llene el recuadro |
 | Producción | API especializada (Plate Recognizer, OpenALPR) o SDK de cámara LPR | Garita fija, >95 % en condiciones controladas |
 
 **Regla de oro:** el OCR *propone*, el guardia *confirma*. Ninguna placa se guarda sin validación humana. En el prototipo, si no hay conexión el OCR no está disponible y el campo manual sigue funcionando.
@@ -312,7 +312,7 @@ No incluyo precios porque dependen del proveedor y del tipo de cambio: conviene 
 |---|---|
 | `index.html` | Estructura, login por rol, shell del dashboard |
 | `assets/css/styles.css` | Sistema de diseño responsive (móvil, tablet, desktop) |
-| `assets/js/data.js` | Modelo, generador de padrón demo (100 casas, ~400 eventos) |
+| `assets/js/data.js` | Modelo de datos y almacenamiento local |
 | `assets/js/core.js` | Utilidades, estancias, estadísticas, modales |
 | `assets/js/camera.js` | Cámara del móvil, captura, OCR opcional |
 | `assets/js/views-*.js` | Panel, mapa, accesos, vehículos, residentes, reportes |

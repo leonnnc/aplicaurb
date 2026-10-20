@@ -484,6 +484,19 @@
 
   /* ---------- Vista ---------- */
   Views.accesos = function (root) {
+    if (!DB.state.casas.length) {
+      root.innerHTML = '<section class="card"><div class="card-body" style="text-align:center;padding:36px 22px">' +
+        '<div class="kpi-ico" style="margin:0 auto 12px">' + U.icon('home') + '</div>' +
+        '<h3 style="font-size:16px">Sin casas configuradas</h3>' +
+        '<p class="hint" style="max-width:420px;margin:6px auto 0">' +
+        (App.role === 'admin'
+          ? 'Genera el padrón de casas en Ajustes para habilitar el registro de accesos.'
+          : 'El administrador debe generar el padrón de casas antes de registrar accesos.') +
+        '</p>' +
+        (App.role === 'admin' ? '<button class="btn btn-primary" style="margin-top:16px" data-view="ajustes">Ir a Ajustes</button>' : '') +
+        '</div></section>';
+      return;
+    }
     if (App.role !== 'guardia') {
       root.innerHTML = soloLectura();
       return;

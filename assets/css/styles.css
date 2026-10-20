@@ -634,7 +634,7 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .cam-stage video { max-height: 100%; }
 .cam-frame {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  width: min(78%, 440px); aspect-ratio: 2.5 / 1;
+  width: min(66%, 380px); aspect-ratio: 3 / 1;
   border-radius: 12px;
   box-shadow: 0 0 0 100vmax rgba(3, 7, 18, .55);
 }

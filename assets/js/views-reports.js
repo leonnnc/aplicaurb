@@ -163,26 +163,32 @@
       '<button class="btn btn-primary" type="submit" style="margin-top:16px">' + U.icon('check', 'btn-ico') + 'Guardar cambios</button>' +
       '</form></div></section>' +
 
-      '<section class="card"><div class="card-head"><div><h3>Datos y respaldo</h3><p>El demo guarda todo en este navegador</p></div></div>' +
+      '<section class="card"><div class="card-head"><div><h3>Padrón de casas</h3><p>Genera los lotes vacíos para empezar</p></div>' +
+      '<div class="spacer"></div><span class="pill">' + DB.state.casas.length + ' casas</span></div>' +
+      '<div class="card-body"><div class="form-grid">' +
+      '<div class="field"><label>Manzanas</label><input class="input" type="number" id="genMz" min="1" max="26" value="4"></div>' +
+      '<div class="field"><label>Lotes por manzana</label><input class="input" type="number" id="genLotes" min="1" max="100" value="25"></div>' +
+      '</div><button class="btn btn-primary" id="genCasas" style="margin-top:14px">' + U.icon('home', 'btn-ico') + 'Generar casas</button>' +
+      '<p class="hint" style="margin-top:8px">Crea lotes vacíos (A-01, A-02…). No genera residentes ni vehículos.</p></div></section>' +
+
+      '<section class="card"><div class="card-head"><div><h3>Datos y respaldo</h3><p>La información se guarda en este navegador</p></div></div>' +
       '<div class="card-body stack" style="gap:10px">' +
       '<div class="row-between"><div><strong style="font-size:13px">Exportar respaldo</strong><div class="hint">Casas, residentes, vehículos y accesos en JSON.</div></div>' +
       '<button class="btn btn-ghost btn-sm" data-act="export-json">Descargar</button></div>' +
-      '<div class="row-between"><div><strong style="font-size:13px">Restaurar demo</strong><div class="hint">Vuelve a generar 100 casas y 3 días de movimientos.</div></div>' +
-      '<button class="btn btn-ghost btn-sm" data-act="reset-demo">Restaurar</button></div>' +
       '<div class="row-between"><div><strong style="font-size:13px">Empezar de cero</strong><div class="hint">Deja el padrón vacío para cargar datos reales.</div></div>' +
       '<button class="btn btn-danger btn-sm" data-act="reset-empty">Vaciar</button></div>' +
       '</div></section>' +
       '</div>' +
 
       '<div class="stack">' +
-      '<section class="card"><div class="card-head"><div><h3>Estado del sistema</h3><p>Entorno de demostración</p></div></div>' +
+      '<section class="card"><div class="card-head"><div><h3>Estado del sistema</h3><p>Instalación local</p></div></div>' +
       '<div class="card-body">' +
       '<div class="row-between" style="padding:8px 0"><span class="hint">Almacenamiento</span><span class="pill ' + (DB.available ? 'pill-green' : 'pill-red') + '">' + (DB.available ? 'localStorage' : 'memoria') + '</span></div>' +
       '<div class="row-between" style="padding:8px 0"><span class="hint">Casas</span><strong>' + DB.state.casas.length + '</strong></div>' +
       '<div class="row-between" style="padding:8px 0"><span class="hint">Residentes</span><strong>' + DB.state.residentes.length + '</strong></div>' +
       '<div class="row-between" style="padding:8px 0"><span class="hint">Vehículos</span><strong>' + DB.state.vehiculos.length + '</strong></div>' +
       '<div class="row-between" style="padding:8px 0"><span class="hint">Eventos</span><strong>' + DB.state.eventos.length + '</strong></div>' +
-      '<div class="row-between" style="padding:8px 0"><span class="hint">Versión</span><strong>1.7 · demo</strong></div>' +
+      '<div class="row-between" style="padding:8px 0"><span class="hint">Versión</span><strong>1.8</strong></div>' +
       '</div></section>' +
 
       '<section class="card"><div class="card-head"><div><h3>Sobre el proyecto</h3><p>URB San Lucas · control de accesos</p></div></div>' +
@@ -221,6 +227,36 @@
       App.refresh();
     });
 
+    const genBtn = root.querySelector('#genCasas');
+    if (genBtn) genBtn.addEventListener('click', () => {
+      const mz = Math.min(26, Math.max(1, parseInt(root.querySelector('#genMz').value, 10) || 4));
+      const porMz = Math.min(100, Math.max(1, parseInt(root.querySelector('#genLotes').value, 10) || 25));
+      const total = mz * porMz;
+      const run = () => {
+        const L = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const casas = [];
+        for (let m = 0; m < mz; m++) {
+          for (let i = 1; i <= porMz; i++) {
+            casas.push({ id: L[m] + '-' + String(i).padStart(2, '0'), mz: L[m], lote: i, calle: 'Manzana ' + L[m], etapa: 1, estado: 'libre' });
+          }
+        }
+        DB.state.casas = casas;
+        DB.state.config.casas = total;
+        DB.save();
+        UI.toast(total + ' casas generadas');
+        App.refresh();
+      };
+      if (!DB.state.casas.length) { run(); return; }
+      const close = UI.modal({
+        title: 'Reemplazar padrón de casas',
+        sub: 'Ya existen ' + DB.state.casas.length + ' casas',
+        body: '<p style="font-size:13px;color:var(--muted);line-height:1.6">Se eliminarán las casas actuales y se crearán ' + total + ' lotes vacíos. Los residentes y vehículos existentes quedarán sin casa asignada.</p>',
+        foot: '<button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-danger" id="genOk">Reemplazar</button>'
+      });
+      const ok = document.querySelector('#genOk');
+      if (ok) ok.addEventListener('click', () => { close(); run(); });
+    });
+
     root.querySelector('[data-act="export-json"]').addEventListener('click', () => {
       const blob = new Blob([JSON.stringify(DB.state, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
@@ -229,19 +265,6 @@
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1500);
       UI.toast('Respaldo descargado');
-    });
-
-    root.querySelector('[data-act="reset-demo"]').addEventListener('click', () => {
-      UI.modal({
-        title: 'Restaurar datos demo',
-        body: '<p style="font-size:13px">Se reemplazará toda la información actual por el padrón de ejemplo de 100 casas.</p>',
-        foot: '<button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="okReset">Restaurar</button>',
-        onMount(wrap, close) {
-          wrap.querySelector('#okReset').addEventListener('click', () => {
-            DB.reset(true); close(); UI.toast('Datos demo restaurados'); App.refresh();
-          });
-        }
-      });
     });
 
     root.querySelector('[data-act="reset-empty"]').addEventListener('click', () => {

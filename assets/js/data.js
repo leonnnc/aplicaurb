@@ -267,7 +267,7 @@
     return {
       schema: SCHEMA, creado: Date.now(), demo: false,
       config: {
-        nombre: 'Mi urbanización', direccion: '', casas: 0, aforo: 0,
+        nombre: 'URB San Lucas', direccion: 'Av. San Lucas 120 · Lima', casas: 0, aforo: 0,
         patronPlaca: '^[A-Z]{3}-?[0-9]{3}$', horasVisita: 4,
         permisosPorteria: ['accesos', 'vehiculos'],
         admin: 'Administración', telefono: ''
@@ -295,6 +295,12 @@
               s.casas.forEach((h) => { if (h.calle === 'Av. Los Álamos') h.calle = 'Av. San Lucas'; });
             }
             this.state = s;
+            // Los datos de demostración se archivan y se arranca en limpio
+            if (s.demo === true) {
+              try { global.localStorage.setItem(KEY + '.demo.backup', JSON.stringify(s)); } catch (e) { /* sin espacio */ }
+              this.state = buildEmpty();
+              this.save();
+            }
             return this.state;
           }
         }
@@ -302,7 +308,7 @@
         this.available = false;
         console.warn('localStorage no disponible, usando memoria.', err);
       }
-      this.state = buildDemo();
+      this.state = buildEmpty();
       this.save();
       return this.state;
     },
