@@ -827,3 +827,47 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+
+/* Splash */
+.splash {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #08111F; overflow: hidden;
+  transition: opacity .5s ease, visibility .5s ease;
+}
+.splash.is-out { opacity: 0; visibility: hidden; }
+.splash-bg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center 55%;
+  transform: scale(1.04);
+  filter: brightness(.72) saturate(.85) blur(2px);
+}
+.splash-veil {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(58% 40% at 50% 50%, rgba(8,17,31,.88), rgba(8,17,31,.15) 74%),
+    radial-gradient(120% 80% at 50% 42%, rgba(8,17,31,.12), rgba(8,17,31,.78) 78%),
+    linear-gradient(180deg, rgba(8,17,31,.55), rgba(8,17,31,.18) 45%, rgba(8,17,31,.92));
+}
+.splash-content {
+  position: relative; height: 100%; padding: 24px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; color: #fff;
+}
+.splash-logo {
+  width: 56px; height: 56px; border-radius: 16px; margin-bottom: 18px;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, #14B8A6, #0F766E);
+  box-shadow: 0 12px 30px -12px rgba(20,184,166,.85);
+}
+.splash-logo svg { width: 28px; height: 28px; fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.splash h1 { font-size: clamp(30px, 6vw, 46px); font-weight: 800; letter-spacing: -.02em; }
+.splash p { margin-top: 8px; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: rgba(255,255,255,.72); }
+.splash-bar { width: 170px; height: 3px; margin-top: 28px; border-radius: 999px; background: rgba(255,255,255,.2); overflow: hidden; }
+.splash-bar span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #5EEAD4, #14B8A6); animation: splashBar 2s linear forwards; }
+@keyframes splashBar { from { width: 0; } to { width: 100%; } }
+
+@media (max-width: 640px) {
+  .splash-bg { object-position: center 46%; }
+  .splash h1 { font-size: 34px; }
+}

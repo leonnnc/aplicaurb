@@ -32,6 +32,7 @@
     role: 'admin',
 
     init() {
+      App.splash();
       DB.load();
       App.bindLogin();
       App.bindGlobal();
@@ -40,6 +41,31 @@
       global.App = App;
       // Alias usados por las vistas
       App.accesoModal = function (o) { return Views.accesoModal(o); };
+    },
+
+    splash() {
+      const el = document.getElementById('splash');
+      if (!el) return;
+      const param = Number(new URLSearchParams(location.search).get('splash'));
+      const secs = Math.min(15, Math.max(1, param || 2));
+      document.body.style.overflow = 'hidden';
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        el.classList.add('is-out');
+        document.body.style.overflow = '';
+        setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 600);
+      };
+      const start = () => setTimeout(finish, secs * 1000);
+      const img = el.querySelector('img');
+      if (img && !img.complete) {
+        img.addEventListener('load', start, { once: true });
+        img.addEventListener('error', start, { once: true });
+        setTimeout(finish, secs * 1000 + 2000);
+      } else {
+        start();
+      }
     },
 
     bindLogin() {
